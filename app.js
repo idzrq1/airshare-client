@@ -1,9 +1,10 @@
 // public/app.js
 document.addEventListener('DOMContentLoaded', () => {
-
+  // ================= إعداد رابط السيرفر =================
+  // رابط السيرفر على Render
   const SERVER_URL = "https://airshare-ahxb.onrender.com";
 
-  // عناصر الواجهة
+  // ================= عناصر الواجهة =================
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('fileInput');
   const browseBtn = document.getElementById('browseBtn');
@@ -20,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentPeers = {};
   let socket = null;
 
-  // ===================== اسم الجهاز =====================
+  // ================= اسم الجهاز =================
   let deviceName = localStorage.getItem('deviceName');
   if (!deviceName) {
     deviceName = `جهازي - ${navigator.platform}`;
@@ -33,22 +34,31 @@ document.addEventListener('DOMContentLoaded', () => {
     messageArea.className = 'message ' + type;
   }
 
-  // ===================== Socket.IO =====================
+  // ================= الاتصال بـ Socket.IO =================
   socket = io(SERVER_URL, {
     transports: ['websocket', 'polling']
   });
+  socket.on('connect_error', (err) => {
+  console.error('Socket connect error:', err);
+  connectionStatus.textContent = '• فشل الاتصال بالسيرفر';
+  connectionStatus.classList.remove('connected');
+  connectionStatus.classList.add('disconnected');
+  showMessage('خطأ في الاتصال بالسيرفر: ' + err.message, 'error');
+});
+
 
   socket.on('connect', () => {
     connectionStatus.textContent = '• متصل بالسيرفر';
-    connectionStatus.classList.add('connected');
     connectionStatus.classList.remove('disconnected');
+    connectionStatus.classList.add('connected');
+
     socket.emit('announce', { name: deviceNameInput.value.trim() || deviceName });
   });
 
   socket.on('disconnect', () => {
     connectionStatus.textContent = '• غير متصل';
-    connectionStatus.classList.add('disconnected');
     connectionStatus.classList.remove('connected');
+    connectionStatus.classList.add('disconnected');
     currentPeers = {};
     updatePeerList([]);
   });
@@ -56,14 +66,17 @@ document.addEventListener('DOMContentLoaded', () => {
   socket.on('connect_error', (err) => {
     console.error('Socket connect error:', err);
     connectionStatus.textContent = '• فشل الاتصال بالسيرفر';
-    connectionStatus.classList.add('disconnected');
     connectionStatus.classList.remove('connected');
+    connectionStatus.classList.add('disconnected');
+    showMessage('خطأ في الاتصال بالسيرفر: ' + err.message, 'error');
   });
 
-  socket.on('peers', (arr) => {
+  socket.on('peers', (peersArray) => {
     currentPeers = {};
-    arr.forEach(p => currentPeers[p.id] = p);
-    updatePeerList(arr);
+    peersArray.forEach((p) => {
+      currentPeers[p.id] = p;
+    });
+    updatePeerList(Object.values(currentPeers));
   });
 
   socket.on('peer-joined', (peer) => {
@@ -76,113 +89,147 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePeerList(Object.values(currentPeers));
   });
 
-  socket.on('file-received', addIncomingFile);
+  // استلام ملف من السيرفر
+  socket.on('file-received', (payload) => {
+    addIncomingFile(payload);
+  });
 
-  // ===================== تعديل اسم الجهاز =====================
-  function updateDeviceName() {
+  // ================= تعديل اسم الجهاز =================
+  function handleNameUpdate() {
     const newName = deviceNameInput.value.trim();
     if (newName && newName !== deviceName) {
       deviceName = newName;
       localStorage.setItem('deviceName', deviceName);
-      socket.emit('announce', { name: deviceName });
+      if (socket && socket.connected) {
+        socket.emit('announce', { name: deviceName });
+      }
     }
   }
 
-  deviceNameInput.addEventListener('blur', updateDeviceName);
-  deviceNameInput.addEventListener('keyup', e => {
+  deviceNameInput.addEventListener('blur', handleNameUpdate);
+  deviceNameInput.addEventListener('keyup', (e) => {
     if (e.key === 'Enter') {
-      updateDeviceName();
+      handleNameUpdate();
       deviceNameInput.blur();
     }
   });
 
-  // ===================== اختيار / سحب ملف =====================
-  browseBtn.addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+  // ================= اختيار / سحب الملف =================
+  browseBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    fileInput.click();
+  });
 
-  dropzone.addEventListener('dragover', e => {
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileSelection(e.target.files[0]);
+    }
+  });
+
+  dropzone.addEventListener('dragover', (e) => {
     e.preventDefault();
     dropzone.classList.add('dragover');
   });
 
-  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-
-  dropzone.addEventListener('drop', e => {
-    e.preventDefault();
+  dropzone.addEventListener('dragleave', () => {
     dropzone.classList.remove('dragover');
-    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
   });
 
-  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelection(e.dataTransfer.files[0]);
+    }
+  });
 
-  function handleFile(file) {
+  dropzone.addEventListener('click', (e) => {
+    if (e.target !== browseBtn && !e.target.closest('#browseBtn')) {
+      fileInput.click();
+    }
+  });
+
+  function handleFileSelection(file) {
     selectedFile = file;
     fileNameSpan.textContent = `الملف: ${file.name}`;
     fileSizeSpan.textContent = `الحجم: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
     fileStatus.style.display = 'block';
-    showMessage('الملف جاهز — اختر جهاز لإرساله', 'info');
+    showMessage('الملف جاهز، اختر جهاز من القائمة لإرساله.', 'info');
   }
 
-  // ===================== قائمة الأجهزة =====================
-  function updatePeerList(arr) {
+  // ================= قائمة الأجهزة =================
+  function updatePeerList(peersArray) {
     peerList.innerHTML = '';
 
-    if (!arr.length) {
+    if (!peersArray.length) {
       const li = document.createElement('li');
-      li.textContent = 'لا توجد أجهزة حالياً.';
+      li.className = 'empty-state';
+      li.textContent = 'لا توجد أجهزة قريبة حالياً.';
       peerList.appendChild(li);
       return;
     }
 
-    arr.forEach(peer => {
-      if (peer.id === socket.id) return;
+    peersArray.forEach((peer) => {
+      if (peer.id === socket.id) return; // لا نعرض نفسنا
 
       const li = document.createElement('li');
       li.className = 'peer-item';
 
-      const name = document.createElement('span');
-      name.innerHTML = `💻 ${peer.name}`;
+      const nameSpan = document.createElement('span');
+      nameSpan.innerHTML = `💻 ${peer.name}`;
 
       const btn = document.createElement('button');
       btn.className = 'primary-btn small';
       btn.textContent = 'إرسال إليه';
-      btn.addEventListener('click', () => sendFile(peer.id, peer.name));
+      btn.addEventListener('click', () => {
+        sendFileToPeer(peer.id, peer.name);
+      });
 
-      li.appendChild(name);
+      li.appendChild(nameSpan);
       li.appendChild(btn);
       peerList.appendChild(li);
     });
   }
 
-  // ===================== إرسال الملفات =====================
-  async function sendFile(peerId, peerName) {
-    if (!selectedFile) return showMessage('اختر ملف أولاً', 'error');
+  // ================= إرسال الملف لجهاز معيّن =================
+  async function sendFileToPeer(peerId, peerName) {
+    if (!socket || !socket.connected) {
+      showMessage('غير متصل بالسيرفر.', 'error');
+      return;
+    }
 
-    showMessage(`يتم الإرسال إلى ${peerName} ...`, 'info');
+    if (!selectedFile) {
+      showMessage('اختر ملف أولاً قبل الإرسال.', 'error');
+      return;
+    }
 
-    const data = new FormData();
-    data.append('file', selectedFile);
-    data.append('targetPeerId', peerId);
-    data.append('fromPeerId', socket.id);
+    showMessage(`جاري إرسال الملف إلى ${peerName}...`, 'info');
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('targetPeerId', peerId);
+    formData.append('fromPeerId', socket.id);
 
     try {
       const res = await fetch(`${SERVER_URL}/upload-peer`, {
         method: 'POST',
-        body: data
+        body: formData
       });
-      const json = await res.json();
 
-      if (json.ok) {
-        showMessage(`تم الإرسال إلى ${peerName} ✔`, 'success');
+      const data = await res.json();
+
+      if (res.ok && data.ok) {
+        showMessage(`تم إرسال الملف إلى ${peerName} بنجاح ✅`, 'success');
       } else {
-        showMessage('فشل إرسال الملف', 'error');
+        showMessage(data.message || 'فشل إرسال الملف.', 'error');
       }
-    } catch {
-      showMessage('خطأ أثناء الإرسال', 'error');
+    } catch (err) {
+      console.error(err);
+      showMessage('حدث خطأ أثناء إرسال الملف.', 'error');
     }
   }
 
-  // ===================== الملفات الواردة =====================
+  // ================= إضافة ملف وارد للصندوق =================
   function addIncomingFile(payload) {
     const empty = inbox.querySelector('.empty-inbox');
     if (empty) empty.remove();
@@ -190,43 +237,66 @@ document.addEventListener('DOMContentLoaded', () => {
     const card = document.createElement('div');
     card.className = 'file-card';
 
-    card.innerHTML = `
-      <div class="file-title">${payload.originalName}</div>
-      <div class="file-meta">من: ${payload.fromName} • ${(payload.size / 1024 / 1024).toFixed(2)} MB</div>
-    `;
+    const title = document.createElement('div');
+    title.className = 'file-title';
+    title.textContent = payload.originalName || 'ملف بدون اسم';
+
+    const meta = document.createElement('div');
+    meta.className = 'file-meta';
+    const sizeMB = (payload.size / 1024 / 1024).toFixed(2);
+    meta.textContent = `من: ${payload.fromName} • الحجم: ${sizeMB} MB`;
 
     const link = document.createElement('a');
-    link.href = `${SERVER_URL}${payload.downloadUrl}`;
-    link.textContent = 'تحميل';
-    link.className = 'secondary-btn small';
-    link.download = payload.originalName;
+    const href = payload.downloadUrl
+      ? `${SERVER_URL}${payload.downloadUrl}`
+      : `${SERVER_URL}${payload.url}`;
 
+    link.href = href;
+    link.className = 'secondary-btn small';
+    link.textContent = 'تحميل الملف';
+    link.setAttribute('download', payload.originalName || 'file');
+
+    card.appendChild(title);
+    card.appendChild(meta);
     card.appendChild(link);
+
     inbox.appendChild(card);
   }
 
-  // ===================== نافذة التعريف =====================
+  // ================= نافذة التعريف عن صاحب الموقع =================
   const aboutBtn = document.getElementById('aboutBtn');
   const aboutModal = document.getElementById('aboutModal');
   const aboutClose = document.getElementById('aboutClose');
 
   function openAbout() {
+    if (!aboutModal) return;
     aboutModal.classList.remove('hidden');
   }
 
   function closeAbout() {
+    if (!aboutModal) return;
     aboutModal.classList.add('hidden');
   }
 
-  aboutBtn.addEventListener('click', openAbout);
-  aboutClose.addEventListener('click', closeAbout);
+  if (aboutBtn && aboutModal && aboutClose) {
+    // فتح عند الضغط على زر التعجب
+    aboutBtn.addEventListener('click', openAbout);
 
-  aboutModal.addEventListener('click', e => {
-    if (e.target === aboutModal) closeAbout();
-  });
+    // إغلاق عند الضغط على ×
+    aboutClose.addEventListener('click', closeAbout);
 
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeAbout();
-  });
+    // إغلاق عند الضغط على الخلفية السوداء
+    aboutModal.addEventListener('click', (e) => {
+      if (e.target === aboutModal) {
+        closeAbout();
+      }
+    });
 
+    // إغلاق عند ضغط زر Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeAbout();
+      }
+    });
+  }
 });
