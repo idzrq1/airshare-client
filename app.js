@@ -33,11 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const debugSocketId = document.getElementById('debugSocketId');
   const debugPeersCount = document.getElementById('debugPeersCount');
 
-  // إعدادات
-  const settingsBtn = document.getElementById('settingsBtn');
-  const settingsPanel = document.getElementById('settingsPanel');
-  const settingsClose = document.getElementById('settingsClose');
-
+  
   // عناصر داخل الإعدادات
   const languageSelect = document.getElementById('languageSelect');
   const themeSelect = document.getElementById('themeSelect');
@@ -258,27 +254,74 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ============= فتح / إغلاق لوحة الإعدادات =============
-  function openSettings() {
-    settingsPanel.classList.remove('hidden');
-  }
+ // ============= لوحات الإعدادات والتعريف =============
 
-  function closeSettings() {
-    settingsPanel.classList.add('hidden');
-  }
+// عناصر لوحة الإعدادات
+const settingsBtn   = document.getElementById('settingsBtn');
+const settingsPanel = document.getElementById('settingsPanel');
+const settingsClose = document.getElementById('settingsClose');
 
+// عناصر لوحة التعريف
+const aboutBtn   = document.getElementById('aboutBtn');
+const aboutPanel = document.getElementById('aboutPanel');
+const aboutClose = document.getElementById('aboutClose');
+
+// فتح / إغلاق الإعدادات
+function openSettings() {
+  if (!settingsPanel) return;
+  settingsPanel.classList.remove('hidden');
+}
+
+function closeSettings() {
+  if (!settingsPanel) return;
+  settingsPanel.classList.add('hidden');
+}
+
+// فتح / إغلاق التعريف
+function openAbout() {
+  if (!aboutPanel) return;
+  aboutPanel.classList.remove('hidden');
+}
+
+function closeAbout() {
+  if (!aboutPanel) return;
+  aboutPanel.classList.add('hidden');
+}
+
+// ربط الأحداث بلوحة الإعدادات
+if (settingsBtn && settingsPanel && settingsClose) {
   settingsBtn.addEventListener('click', openSettings);
   settingsClose.addEventListener('click', closeSettings);
+
+  // إغلاق عند الضغط على الخلفية الداكنة
   settingsPanel.addEventListener('click', (e) => {
     if (e.target === settingsPanel) {
       closeSettings();
     }
   });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      closeSettings();
+}
+
+// ربط الأحداث بلوحة التعريف
+if (aboutBtn && aboutPanel && aboutClose) {
+  aboutBtn.addEventListener('click', openAbout);
+  aboutClose.addEventListener('click', closeAbout);
+
+  // إغلاق عند الضغط على الخلفية الداكنة
+  aboutPanel.addEventListener('click', (e) => {
+    if (e.target === aboutPanel) {
+      closeAbout();
     }
   });
+}
+
+// إغلاق أي لوحة مفتوحة بزر Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeSettings();
+    closeAbout();
+  }
+});
+
 
   // ============= Ping Test =============
   pingBtn.addEventListener('click', async () => {
