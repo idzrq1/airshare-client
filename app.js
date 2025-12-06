@@ -1,8 +1,10 @@
+// public/app.js
 document.addEventListener('DOMContentLoaded', () => {
+  // ================= إعداد رابط السيرفر =================
   // رابط السيرفر على Render
   const SERVER_URL = "https://airshare-ahxb.onrender.com";
 
-  // عناصر الواجهة
+  // ================= عناصر الواجهة =================
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('fileInput');
   const browseBtn = document.getElementById('browseBtn');
@@ -19,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentPeers = {};
   let socket = null;
 
-  // ========== اسم الجهاز ==========
+  // ================= اسم الجهاز =================
   let deviceName = localStorage.getItem('deviceName');
   if (!deviceName) {
     deviceName = `جهازي - ${navigator.platform}`;
@@ -32,15 +34,24 @@ document.addEventListener('DOMContentLoaded', () => {
     messageArea.className = 'message ' + type;
   }
 
-  // ========== الاتصال بـ Socket.IO ==========
+  // ================= الاتصال بـ Socket.IO =================
   socket = io(SERVER_URL, {
     transports: ['websocket', 'polling']
   });
+  socket.on('connect_error', (err) => {
+  console.error('Socket connect error:', err);
+  connectionStatus.textContent = '• فشل الاتصال بالسيرفر';
+  connectionStatus.classList.remove('connected');
+  connectionStatus.classList.add('disconnected');
+  showMessage('خطأ في الاتصال بالسيرفر: ' + err.message, 'error');
+});
+
 
   socket.on('connect', () => {
     connectionStatus.textContent = '• متصل بالسيرفر';
     connectionStatus.classList.remove('disconnected');
     connectionStatus.classList.add('connected');
+
     socket.emit('announce', { name: deviceNameInput.value.trim() || deviceName });
   });
 
@@ -78,11 +89,12 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePeerList(Object.values(currentPeers));
   });
 
+  // استلام ملف من السيرفر
   socket.on('file-received', (payload) => {
     addIncomingFile(payload);
   });
 
-  // ========== تعديل اسم الجهاز ==========
+  // ================= تعديل اسم الجهاز =================
   function handleNameUpdate() {
     const newName = deviceNameInput.value.trim();
     if (newName && newName !== deviceName) {
@@ -102,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ========== اختيار / سحب الملف ==========
+  // ================= اختيار / سحب الملف =================
   browseBtn.addEventListener('click', (e) => {
     e.preventDefault();
     fileInput.click();
@@ -145,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showMessage('الملف جاهز، اختر جهاز من القائمة لإرساله.', 'info');
   }
 
-  // ========== قائمة الأجهزة ==========
+  // ================= قائمة الأجهزة =================
   function updatePeerList(peersArray) {
     peerList.innerHTML = '';
 
@@ -179,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ========== إرسال الملف لجهاز معيّن ==========
+  // ================= إرسال الملف لجهاز معيّن =================
   async function sendFileToPeer(peerId, peerName) {
     if (!socket || !socket.connected) {
       showMessage('غير متصل بالسيرفر.', 'error');
@@ -217,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ========== إضافة ملف وارد للصندوق ==========
+  // ================= إضافة ملف وارد للصندوق =================
   function addIncomingFile(payload) {
     const empty = inbox.querySelector('.empty-inbox');
     if (empty) empty.remove();
@@ -251,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
     inbox.appendChild(card);
   }
 
-  // ========== نافذة التعريف عن صاحب الموقع ==========
+  // ================= نافذة التعريف عن صاحب الموقع =================
   const aboutBtn = document.getElementById('aboutBtn');
   const aboutModal = document.getElementById('aboutModal');
   const aboutClose = document.getElementById('aboutClose');
