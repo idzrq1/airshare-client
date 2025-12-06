@@ -1,10 +1,9 @@
 // public/app.js
 document.addEventListener('DOMContentLoaded', () => {
-  // ================= إعداد رابط السيرفر =================
-  // رابط السيرفر على Render
+
   const SERVER_URL = "https://airshare-ahxb.onrender.com";
 
-  // ================= عناصر الواجهة =================
+  // عناصر الواجهة
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('fileInput');
   const browseBtn = document.getElementById('browseBtn');
@@ -21,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentPeers = {};
   let socket = null;
 
-  // ================= اسم الجهاز =================
+  // ===================== اسم الجهاز =====================
   let deviceName = localStorage.getItem('deviceName');
   if (!deviceName) {
     deviceName = `جهازي - ${navigator.platform}`;
@@ -34,31 +33,22 @@ document.addEventListener('DOMContentLoaded', () => {
     messageArea.className = 'message ' + type;
   }
 
-  // ================= الاتصال بـ Socket.IO =================
+  // ===================== Socket.IO =====================
   socket = io(SERVER_URL, {
     transports: ['websocket', 'polling']
   });
-  socket.on('connect_error', (err) => {
-  console.error('Socket connect error:', err);
-  connectionStatus.textContent = '• فشل الاتصال بالسيرفر';
-  connectionStatus.classList.remove('connected');
-  connectionStatus.classList.add('disconnected');
-  showMessage('خطأ في الاتصال بالسيرفر: ' + err.message, 'error');
-});
-
 
   socket.on('connect', () => {
     connectionStatus.textContent = '• متصل بالسيرفر';
-    connectionStatus.classList.remove('disconnected');
     connectionStatus.classList.add('connected');
-
+    connectionStatus.classList.remove('disconnected');
     socket.emit('announce', { name: deviceNameInput.value.trim() || deviceName });
   });
 
   socket.on('disconnect', () => {
     connectionStatus.textContent = '• غير متصل';
-    connectionStatus.classList.remove('connected');
     connectionStatus.classList.add('disconnected');
+    connectionStatus.classList.remove('connected');
     currentPeers = {};
     updatePeerList([]);
   });
@@ -66,17 +56,14 @@ document.addEventListener('DOMContentLoaded', () => {
   socket.on('connect_error', (err) => {
     console.error('Socket connect error:', err);
     connectionStatus.textContent = '• فشل الاتصال بالسيرفر';
-    connectionStatus.classList.remove('connected');
     connectionStatus.classList.add('disconnected');
-    showMessage('خطأ في الاتصال بالسيرفر: ' + err.message, 'error');
+    connectionStatus.classList.remove('connected');
   });
 
-  socket.on('peers', (peersArray) => {
+  socket.on('peers', (arr) => {
     currentPeers = {};
-    peersArray.forEach((p) => {
-      currentPeers[p.id] = p;
-    });
-    updatePeerList(Object.values(currentPeers));
+    arr.forEach(p => currentPeers[p.id] = p);
+    updatePeerList(arr);
   });
 
   socket.on('peer-joined', (peer) => {
@@ -89,147 +76,113 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePeerList(Object.values(currentPeers));
   });
 
-  // استلام ملف من السيرفر
-  socket.on('file-received', (payload) => {
-    addIncomingFile(payload);
-  });
+  socket.on('file-received', addIncomingFile);
 
-  // ================= تعديل اسم الجهاز =================
-  function handleNameUpdate() {
+  // ===================== تعديل اسم الجهاز =====================
+  function updateDeviceName() {
     const newName = deviceNameInput.value.trim();
     if (newName && newName !== deviceName) {
       deviceName = newName;
       localStorage.setItem('deviceName', deviceName);
-      if (socket && socket.connected) {
-        socket.emit('announce', { name: deviceName });
-      }
+      socket.emit('announce', { name: deviceName });
     }
   }
 
-  deviceNameInput.addEventListener('blur', handleNameUpdate);
-  deviceNameInput.addEventListener('keyup', (e) => {
+  deviceNameInput.addEventListener('blur', updateDeviceName);
+  deviceNameInput.addEventListener('keyup', e => {
     if (e.key === 'Enter') {
-      handleNameUpdate();
+      updateDeviceName();
       deviceNameInput.blur();
     }
   });
 
-  // ================= اختيار / سحب الملف =================
-  browseBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    fileInput.click();
-  });
+  // ===================== اختيار / سحب ملف =====================
+  browseBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
 
-  fileInput.addEventListener('change', (e) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFileSelection(e.target.files[0]);
-    }
-  });
-
-  dropzone.addEventListener('dragover', (e) => {
+  dropzone.addEventListener('dragover', e => {
     e.preventDefault();
     dropzone.classList.add('dragover');
   });
 
-  dropzone.addEventListener('dragleave', () => {
-    dropzone.classList.remove('dragover');
-  });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
 
-  dropzone.addEventListener('drop', (e) => {
+  dropzone.addEventListener('drop', e => {
     e.preventDefault();
     dropzone.classList.remove('dragover');
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelection(e.dataTransfer.files[0]);
-    }
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
   });
 
-  dropzone.addEventListener('click', (e) => {
-    if (e.target !== browseBtn && !e.target.closest('#browseBtn')) {
-      fileInput.click();
-    }
-  });
+  dropzone.addEventListener('click', () => fileInput.click());
 
-  function handleFileSelection(file) {
+  function handleFile(file) {
     selectedFile = file;
     fileNameSpan.textContent = `الملف: ${file.name}`;
     fileSizeSpan.textContent = `الحجم: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
     fileStatus.style.display = 'block';
-    showMessage('الملف جاهز، اختر جهاز من القائمة لإرساله.', 'info');
+    showMessage('الملف جاهز — اختر جهاز لإرساله', 'info');
   }
 
-  // ================= قائمة الأجهزة =================
-  function updatePeerList(peersArray) {
+  // ===================== قائمة الأجهزة =====================
+  function updatePeerList(arr) {
     peerList.innerHTML = '';
 
-    if (!peersArray.length) {
+    if (!arr.length) {
       const li = document.createElement('li');
-      li.className = 'empty-state';
-      li.textContent = 'لا توجد أجهزة قريبة حالياً.';
+      li.textContent = 'لا توجد أجهزة حالياً.';
       peerList.appendChild(li);
       return;
     }
 
-    peersArray.forEach((peer) => {
-      if (peer.id === socket.id) return; // لا نعرض نفسنا
+    arr.forEach(peer => {
+      if (peer.id === socket.id) return;
 
       const li = document.createElement('li');
       li.className = 'peer-item';
 
-      const nameSpan = document.createElement('span');
-      nameSpan.innerHTML = `💻 ${peer.name}`;
+      const name = document.createElement('span');
+      name.innerHTML = `💻 ${peer.name}`;
 
       const btn = document.createElement('button');
       btn.className = 'primary-btn small';
       btn.textContent = 'إرسال إليه';
-      btn.addEventListener('click', () => {
-        sendFileToPeer(peer.id, peer.name);
-      });
+      btn.addEventListener('click', () => sendFile(peer.id, peer.name));
 
-      li.appendChild(nameSpan);
+      li.appendChild(name);
       li.appendChild(btn);
       peerList.appendChild(li);
     });
   }
 
-  // ================= إرسال الملف لجهاز معيّن =================
-  async function sendFileToPeer(peerId, peerName) {
-    if (!socket || !socket.connected) {
-      showMessage('غير متصل بالسيرفر.', 'error');
-      return;
-    }
+  // ===================== إرسال الملفات =====================
+  async function sendFile(peerId, peerName) {
+    if (!selectedFile) return showMessage('اختر ملف أولاً', 'error');
 
-    if (!selectedFile) {
-      showMessage('اختر ملف أولاً قبل الإرسال.', 'error');
-      return;
-    }
+    showMessage(`يتم الإرسال إلى ${peerName} ...`, 'info');
 
-    showMessage(`جاري إرسال الملف إلى ${peerName}...`, 'info');
-
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    formData.append('targetPeerId', peerId);
-    formData.append('fromPeerId', socket.id);
+    const data = new FormData();
+    data.append('file', selectedFile);
+    data.append('targetPeerId', peerId);
+    data.append('fromPeerId', socket.id);
 
     try {
       const res = await fetch(`${SERVER_URL}/upload-peer`, {
         method: 'POST',
-        body: formData
+        body: data
       });
+      const json = await res.json();
 
-      const data = await res.json();
-
-      if (res.ok && data.ok) {
-        showMessage(`تم إرسال الملف إلى ${peerName} بنجاح ✅`, 'success');
+      if (json.ok) {
+        showMessage(`تم الإرسال إلى ${peerName} ✔`, 'success');
       } else {
-        showMessage(data.message || 'فشل إرسال الملف.', 'error');
+        showMessage('فشل إرسال الملف', 'error');
       }
-    } catch (err) {
-      console.error(err);
-      showMessage('حدث خطأ أثناء إرسال الملف.', 'error');
+    } catch {
+      showMessage('خطأ أثناء الإرسال', 'error');
     }
   }
 
-  // ================= إضافة ملف وارد للصندوق =================
+  // ===================== الملفات الواردة =====================
   function addIncomingFile(payload) {
     const empty = inbox.querySelector('.empty-inbox');
     if (empty) empty.remove();
@@ -237,61 +190,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const card = document.createElement('div');
     card.className = 'file-card';
 
-    const title = document.createElement('div');
-    title.className = 'file-title';
-    title.textContent = payload.originalName || 'ملف بدون اسم';
-
-    const meta = document.createElement('div');
-    meta.className = 'file-meta';
-    const sizeMB = (payload.size / 1024 / 1024).toFixed(2);
-    meta.textContent = `من: ${payload.fromName} • الحجم: ${sizeMB} MB`;
+    card.innerHTML = `
+      <div class="file-title">${payload.originalName}</div>
+      <div class="file-meta">من: ${payload.fromName} • ${(payload.size / 1024 / 1024).toFixed(2)} MB</div>
+    `;
 
     const link = document.createElement('a');
-    const href = payload.downloadUrl
-      ? `${SERVER_URL}${payload.downloadUrl}`
-      : `${SERVER_URL}${payload.url}`;
-
-    link.href = href;
+    link.href = `${SERVER_URL}${payload.downloadUrl}`;
+    link.textContent = 'تحميل';
     link.className = 'secondary-btn small';
-    link.textContent = 'تحميل الملف';
-    link.setAttribute('download', payload.originalName || 'file');
+    link.download = payload.originalName;
 
-    card.appendChild(title);
-    card.appendChild(meta);
     card.appendChild(link);
-
     inbox.appendChild(card);
   }
 
-  // ================= نافذة التعريف عن صاحب الموقع =================
+  // ===================== نافذة التعريف =====================
   const aboutBtn = document.getElementById('aboutBtn');
   const aboutModal = document.getElementById('aboutModal');
   const aboutClose = document.getElementById('aboutClose');
 
   function openAbout() {
-    if (!aboutModal) return;
     aboutModal.classList.remove('hidden');
   }
 
   function closeAbout() {
-    if (!aboutModal) return;
     aboutModal.classList.add('hidden');
   }
 
-  if (aboutBtn && aboutModal && aboutClose) {
-    aboutBtn.addEventListener('click', openAbout);
-    aboutClose.addEventListener('click', closeAbout);
+  aboutBtn.addEventListener('click', openAbout);
+  aboutClose.addEventListener('click', closeAbout);
 
-    aboutModal.addEventListener('click', (e) => {
-      if (e.target === aboutModal) {
-        closeAbout();
-      }
-    });
+  aboutModal.addEventListener('click', e => {
+    if (e.target === aboutModal) closeAbout();
+  });
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closeAbout();
-      }
-    });
-  }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeAbout();
+  });
+
 });
