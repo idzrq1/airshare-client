@@ -1,90 +1,203 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AirShare</title>
-    <link rel="stylesheet" href="style.css" />
-
-    <!-- Socket.IO من CDN -->
-    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AirShare</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
-    <!-- زر التعريف عن صاحب الموقع -->
-    <button id="aboutBtn" class="about-btn" aria-label="عن صاحب الموقع">!</button>
+  <div class="container">
 
-    <div class="container">
-
-        <!-- ===================== العنوان ===================== -->
-        <header class="header">
-            <h1 class="logo">AirShare</h1>
-            <div class="device-name-box">
-                <label>اسم جهازي:</label>
-                <input id="deviceNameInput" type="text" placeholder="اسم الجهاز" />
-            </div>
-            <div id="connectionStatus" class="status disconnected">• غير متصل</div>
-        </header>
-
-        <!-- ===================== قسم رفع الملفات ===================== -->
-        <section class="upload-section">
-            <h2>ارفع ملف</h2>
-
-            <div id="dropzone" class="dropzone">
-                <p>اسحب الملف هنا أو</p>
-                <button id="browseBtn" class="primary-btn">اختر ملف</button>
-                <input type="file" id="fileInput" hidden />
-            </div>
-
-            <div id="fileStatus" class="file-status" style="display: none;">
-                <span id="fileName"></span><br>
-                <span id="fileSize"></span>
-            </div>
-
-            <div id="messageArea" class="message"></div>
-        </section>
-
-        <!-- ===================== الأجهزة ===================== -->
-        <section class="peers-section">
-            <h2>الأجهزة المتصلة</h2>
-            <ul id="peerList" class="peer-list"></ul>
-        </section>
-
-        <!-- ===================== الملفات الواردة ===================== -->
-        <section class="inbox-section">
-            <h2>الملفات الواردة</h2>
-
-            <div id="inbox" class="inbox">
-                <div class="empty-inbox">لا توجد ملفات مستلمة.</div>
-            </div>
-        </section>
-
-    </div>
-
-    <!-- نافذة تعريف عن صاحب الموقع -->
-    <div id="aboutModal" class="modal hidden">
-        <div class="modal-content">
-            <button id="aboutClose" class="modal-close" aria-label="إغلاق">×</button>
-            <h2 class="modal-title">عن صاحب الموقع</h2>
-            <p class="modal-name">idzrq</p>
-            <p class="modal-text">
-                أنا <strong>idzrq</strong>، بنيت مشروع AirShare من الصفر بمساعدة الذكاء الاصطناعي،
-                من أول سطر كود إلى تشغيله على Vercel وRender. كان تحدّي حلو، وتعلّمت فيه كثير عن
-                تطوير الويب، إدارة السيرفرات، وربط الواجهة مع الباك إند.
-            </p>
-            <ul class="modal-list">
-                <li>هذا المشروع مو مجرد تجربة، بل خطوة أولى لمشاريع أكبر بإذن الله.</li>
-                <li>أستخدم الذكاء الاصطناعي كأداة تساعدني، لكن القرارات والتصميم والفكرة منّي.</li>
-                <li>هدفي أطلق المزيد من الأدوات والمواقع اللي تسهّل مشاركة الملفات وتفيد الناس.</li>
-            </ul>
-            <p class="modal-footer-note">
-                AirShare ما راح يكون آخر مشروع لي، تابعني في المرات الجاية… اللي جاي أحسن ✨
-            </p>
+    <!-- الهيدر -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="logo" data-i18n="title">AirShare</h1>
+        <div class="device-name-box">
+          <label for="deviceNameInput" data-i18n="deviceNameLabel">اسم جهازي:</label>
+          <input id="deviceNameInput" type="text" placeholder="اسم الجهاز" />
         </div>
+      </div>
+
+      <div class="header-right">
+        <div id="connectionStatus" class="status disconnected">• غير متصل</div>
+        <button id="settingsBtn" class="icon-btn" aria-label="الإعدادات">⚙</button>
+      </div>
+    </header>
+
+    <!-- قسم رفع الملفات -->
+    <section class="upload-section">
+      <h2 data-i18n="uploadTitle">ارفع ملف</h2>
+
+      <div id="dropzone" class="dropzone">
+        <p data-i18n="dropzoneText">اسحب الملف هنا أو</p>
+        <button id="browseBtn" class="primary-btn" data-i18n="browseBtn">اختر ملف</button>
+        <input type="file" id="fileInput" hidden />
+      </div>
+
+      <div id="fileStatus" class="file-status hidden">
+        <span id="fileName"></span><br />
+        <span id="fileSize"></span>
+      </div>
+
+      <div id="messageArea" class="message"></div>
+    </section>
+
+    <!-- الأجهزة المتصلة -->
+    <section class="peers-section">
+      <h2 data-i18n="peersTitle">الأجهزة المتصلة</h2>
+      <ul id="peerList" class="peer-list"></ul>
+    </section>
+
+    <!-- الملفات الواردة -->
+    <section class="inbox-section">
+      <h2 data-i18n="inboxTitle">الملفات الواردة</h2>
+      <div id="inbox" class="inbox">
+        <div class="empty-inbox" data-i18n="emptyInbox">لا توجد ملفات مستلمة.</div>
+      </div>
+    </section>
+
+    <!-- مربع معلومات إضافية في حالة Debug -->
+    <section id="debugPanel" class="debug-panel hidden">
+      <h3 data-i18n="debugTitle">وضع المطوّر</h3>
+      <p><strong>Socket ID:</strong> <span id="debugSocketId">-</span></p>
+      <p><strong data-i18n="debugPeersCount">عدد الأجهزة:</strong> <span id="debugPeersCount">0</span></p>
+    </section>
+
+  </div>
+
+  <!-- لوحة الإعدادات -->
+  <div id="settingsPanel" class="settings-overlay hidden">
+    <div class="settings-panel">
+      <div class="settings-header">
+        <h2 data-i18n="settingsTitle">الإعدادات</h2>
+        <button id="settingsClose" class="icon-btn" aria-label="إغلاق">×</button>
+      </div>
+
+      <div class="settings-body">
+
+        <!-- عام -->
+        <section class="settings-section">
+          <h3 data-i18n="generalSettings">الإعدادات العامة</h3>
+
+          <div class="settings-row">
+            <label for="languageSelect" data-i18n="languageLabel">اللغة:</label>
+            <select id="languageSelect">
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+
+          <div class="settings-row">
+            <label for="themeSelect" data-i18n="themeLabel">الثيم:</label>
+            <select id="themeSelect">
+              <option value="light" data-i18n="themeLight">فاتح</option>
+              <option value="dark" data-i18n="themeDark">داكن</option>
+            </select>
+          </div>
+
+          <div class="settings-row">
+            <label for="accentSelect" data-i18n="accentLabel">اللون المميز:</label>
+            <select id="accentSelect">
+              <option value="blue" data-i18n="accentBlue">أزرق</option>
+              <option value="green" data-i18n="accentGreen">أخضر</option>
+              <option value="purple" data-i18n="accentPurple">بنفسجي</option>
+              <option value="red" data-i18n="accentRed">أحمر</option>
+            </select>
+          </div>
+        </section>
+
+        <!-- الجهاز -->
+        <section class="settings-section">
+          <h3 data-i18n="deviceSettings">إعدادات الجهاز</h3>
+
+          <div class="settings-row">
+            <label for="settingsDeviceName" data-i18n="deviceNameLabel">اسم جهازي:</label>
+            <input id="settingsDeviceName" type="text" placeholder="اسم الجهاز" />
+          </div>
+        </section>
+
+        <!-- الملفات -->
+        <section class="settings-section">
+          <h3 data-i18n="filesSettings">الملفات</h3>
+
+          <div class="settings-row checkbox-row">
+            <label>
+              <input type="checkbox" id="autoSaveCheckbox" />
+              <span data-i18n="autoSaveLabel">حفظ الملفات المستلمة تلقائيًا (تحميل مباشر)</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- الخصوصية -->
+        <section class="settings-section">
+          <h3 data-i18n="privacySettings">الخصوصية</h3>
+
+          <div class="settings-row checkbox-row">
+            <label>
+              <input type="checkbox" id="hideFromPeersCheckbox" />
+              <span data-i18n="hideFromPeersLabel">عدم الظهور في قائمة الأجهزة (لن تستقبل ملفات)</span>
+            </label>
+          </div>
+
+          <div class="settings-row checkbox-row">
+            <label>
+              <input type="checkbox" id="blockIncomingCheckbox" />
+              <span data-i18n="blockIncomingLabel">منع استقبال الملفات (مع بقاء الاتصال)</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- الاتصال -->
+        <section class="settings-section">
+          <h3 data-i18n="connectionSettings">الاتصال</h3>
+
+          <div class="settings-row">
+            <label for="serverUrlInput" data-i18n="serverUrlLabel">رابط السيرفر (Render):</label>
+            <input id="serverUrlInput" type="text" placeholder="https://..." />
+          </div>
+
+          <div class="settings-row">
+            <button id="pingBtn" class="secondary-btn" data-i18n="pingBtn">اختبار الاتصال بالسيرفر</button>
+            <span id="pingResult" class="ping-result"></span>
+          </div>
+
+          <div class="settings-row checkbox-row">
+            <label>
+              <input type="checkbox" id="debugCheckbox" />
+              <span data-i18n="debugLabel">تفعيل وضع المطوّر (إظهار معلومات إضافية)</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- النظام -->
+        <section class="settings-section">
+          <h3 data-i18n="systemSettings">النظام</h3>
+
+          <div class="settings-row">
+            <button id="clearDataBtn" class="danger-btn" data-i18n="clearDataBtn">مسح جميع بيانات الإعدادات</button>
+          </div>
+        </section>
+
+        <!-- عن الموقع -->
+        <section class="settings-section">
+          <h3 data-i18n="aboutTitle">عن AirShare</h3>
+          <p class="about-text" data-i18n="aboutText">
+            AirShare تم تطويره بواسطة <strong>idzrq</strong> كمشروع من الصفر بمساعدة الذكاء الاصطناعي،
+            من مرحلة الفكرة إلى الإطلاق على Vercel و Render. هذا المشروع مجرد بداية لمشاريع أكبر بإذن الله.
+          </p>
+          <p class="about-meta">
+            <span data-i18n="versionLabel">الإصدار:</span> <span>1.0.0</span><br />
+            <span data-i18n="techLabel">التقنيات المستخدمة:</span> HTML, CSS, JavaScript, Socket.IO, Express
+          </p>
+        </section>
+
+      </div>
     </div>
+  </div>
 
-    <!-- سكربت الواجهة -->
-    <script src="app.js"></script>
-
+  <script src="app.js"></script>
 </body>
 </html>
