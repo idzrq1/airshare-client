@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const debugSocketId = document.getElementById('debugSocketId');
   const debugPeersCount = document.getElementById('debugPeersCount');
 
-
+  
   // عناصر داخل الإعدادات
   const languageSelect = document.getElementById('languageSelect');
   const themeSelect = document.getElementById('themeSelect');
@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const autoSaveCheckbox = document.getElementById('autoSaveCheckbox');
   const hideFromPeersCheckbox = document.getElementById('hideFromPeersCheckbox');
   const blockIncomingCheckbox = document.getElementById('blockIncomingCheckbox');
+  const serverUrlInput = document.getElementById('serverUrlInput');
   const pingBtn = document.getElementById('pingBtn');
   const pingResult = document.getElementById('pingResult');
   const clearDataBtn = document.getElementById('clearDataBtn');
