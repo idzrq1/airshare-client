@@ -18,6 +18,11 @@ body {
     padding: 25px;
 }
 
+/* كلاس عام للإخفاء */
+.hidden {
+    display: none;
+}
+
 /* =============== الهيدر =============== */
 
 .header {
@@ -61,6 +66,32 @@ body {
 
 .status.disconnected {
     color: #dc3545;
+}
+
+/* =============== زر التعريف (عن صاحب الموقع) =============== */
+
+.about-btn {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: #ff9800;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.about-btn:hover {
+    background: #fb8c00;
 }
 
 /* =============== قسم رفع الملفات =============== */
@@ -208,4 +239,79 @@ body {
     text-align: center;
     padding: 20px;
     color: #888;
+}
+
+/* =============== نافذة التعريف (المودال) =============== */
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 900;
+}
+
+.modal-content {
+    background: #ffffff;
+    padding: 24px 20px;
+    border-radius: 14px;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    position: relative;
+    text-align: right;
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    cursor: pointer;
+    color: #777;
+}
+
+.modal-close:hover {
+    color: #000;
+}
+
+.modal-title {
+    font-size: 20px;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.modal-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #007bff;
+    margin-bottom: 10px;
+}
+
+.modal-text {
+    font-size: 14px;
+    color: #444;
+    margin-bottom: 12px;
+    line-height: 1.7;
+}
+
+.modal-list {
+    margin-bottom: 12px;
+    padding-right: 18px;
+    font-size: 14px;
+    color: #444;
+}
+
+.modal-list li {
+    margin-bottom: 4px;
+}
+
+.modal-footer-note {
+    font-size: 13px;
+    color: #666;
+    margin-top: 4px;
 }

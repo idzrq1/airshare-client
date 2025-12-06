@@ -1,9 +1,8 @@
 // public/app.js
 document.addEventListener('DOMContentLoaded', () => {
   // ================= إعداد رابط السيرفر =================
-  // غيّر هذا للرابط اللي يعطيك هو Render
-  // مثال: const SERVER_URL = "https://airshare-api.onrender.com";
-  const SERVER_URL = "https://airshare-ahxb.onrender.com"; // حط رابطك من Render
+  // رابط السيرفر على Render
+  const SERVER_URL = "https://airshare-ahxb.onrender.com";
 
   // ================= عناصر الواجهة =================
   const dropzone = document.getElementById('dropzone');
@@ -36,7 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ================= الاتصال بـ Socket.IO =================
-  // نستخدم سيرفر خارجي بدل localhost
   socket = io(SERVER_URL, {
     transports: ['websocket', 'polling']
   });
@@ -63,6 +61,14 @@ document.addEventListener('DOMContentLoaded', () => {
     connectionStatus.classList.add('disconnected');
     currentPeers = {};
     updatePeerList([]);
+  });
+
+  socket.on('connect_error', (err) => {
+    console.error('Socket connect error:', err);
+    connectionStatus.textContent = '• فشل الاتصال بالسيرفر';
+    connectionStatus.classList.remove('connected');
+    connectionStatus.classList.add('disconnected');
+    showMessage('خطأ في الاتصال بالسيرفر: ' + err.message, 'error');
   });
 
   socket.on('peers', (peersArray) => {
@@ -241,7 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
     meta.textContent = `من: ${payload.fromName} • الحجم: ${sizeMB} MB`;
 
     const link = document.createElement('a');
-    // السيرفر يرسل url نسبي مثل /download/xxx → نضيف عليه SERVER_URL
     const href = payload.downloadUrl
       ? `${SERVER_URL}${payload.downloadUrl}`
       : `${SERVER_URL}${payload.url}`;
@@ -256,5 +261,37 @@ document.addEventListener('DOMContentLoaded', () => {
     card.appendChild(link);
 
     inbox.appendChild(card);
+  }
+
+  // ================= نافذة التعريف عن صاحب الموقع =================
+  const aboutBtn = document.getElementById('aboutBtn');
+  const aboutModal = document.getElementById('aboutModal');
+  const aboutClose = document.getElementById('aboutClose');
+
+  function openAbout() {
+    if (!aboutModal) return;
+    aboutModal.classList.remove('hidden');
+  }
+
+  function closeAbout() {
+    if (!aboutModal) return;
+    aboutModal.classList.add('hidden');
+  }
+
+  if (aboutBtn && aboutModal && aboutClose) {
+    aboutBtn.addEventListener('click', openAbout);
+    aboutClose.addEventListener('click', closeAbout);
+
+    aboutModal.addEventListener('click', (e) => {
+      if (e.target === aboutModal) {
+        closeAbout();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeAbout();
+      }
+    });
   }
 });
