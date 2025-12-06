@@ -40,6 +40,14 @@ document.addEventListener('DOMContentLoaded', () => {
   socket = io(SERVER_URL, {
     transports: ['websocket', 'polling']
   });
+  socket.on('connect_error', (err) => {
+  console.error('Socket connect error:', err);
+  connectionStatus.textContent = '• فشل الاتصال بالسيرفر';
+  connectionStatus.classList.remove('connected');
+  connectionStatus.classList.add('disconnected');
+  showMessage('خطأ في الاتصال بالسيرفر: ' + err.message, 'error');
+});
+
 
   socket.on('connect', () => {
     connectionStatus.textContent = '• متصل بالسيرفر';
